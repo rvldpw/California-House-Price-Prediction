@@ -23,7 +23,7 @@ html, body, [class*="css"] {
   background: #f9f9f8;
   color: #1a1a1a;
 }
-#MainMenu, footer, header { visibility: hidden; }
+#MainMenu, footer { visibility: hidden; }
 
 [data-testid="stSidebar"] {
   background: #ffffff;
@@ -411,35 +411,6 @@ with right:
             f"</div>",
             unsafe_allow_html=True
         )
-
-    # Distribution histogram for the selected county
-    st.markdown("<div style='height:1.25rem;'></div>", unsafe_allow_html=True)
-    co_short = selected_county.replace(" County", "")
-    st.markdown(
-        f"<p style='font-size:0.65rem;font-weight:600;letter-spacing:0.12em;"
-        f"text-transform:uppercase;color:#bbb;margin-bottom:0.6rem;'>"
-        f"Distribution — {co_short}</p>",
-        unsafe_allow_html=True
-    )
-    bins   = list(range(0, 560_000, 50_000))
-    prices = county_data["median_house_value"].dropna().tolist()
-    counts = [sum(1 for p in prices if bins[i] <= p < bins[i+1]) for i in range(len(bins)-1)]
-    pb     = min(int(pred // 50_000), len(bins)-2)
-    max_c  = max(counts) if counts else 1
-    bars_html = "<div style='display:flex;align-items:flex-end;gap:2px;height:48px;'>"
-    for i, cnt in enumerate(counts):
-        h  = max(2, int(cnt / max_c * 48))
-        bg = "#1a1a1a" if i == pb else "#e0e0de"
-        bars_html += (
-            f"<div style='flex:1;height:{h}px;background:{bg};"
-            f"border-radius:2px 2px 0 0;' title='${bins[i]//1000}K: {cnt}'></div>"
-        )
-    bars_html += "</div>"
-    bars_html += (
-        f"<p style='font-size:0.62rem;color:#ccc;margin-top:5px;'>"
-        f"▪ {fmt(pred)} (your estimate)</p>"
-    )
-    st.markdown(bars_html, unsafe_allow_html=True)
 
 # Footer
 st.markdown("<div style='height:1.5rem;'></div>", unsafe_allow_html=True)
