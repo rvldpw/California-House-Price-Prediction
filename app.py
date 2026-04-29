@@ -329,39 +329,59 @@ with right:
         unsafe_allow_html=True
     )
 
+    # base map
     m = folium.Map(
         location=[city_lat, city_lon],
         zoom_start=11,
         tiles="CartoDB positron",
-        zoom_control=True,   # enable zoom UI
+        zoom_control=True,
         control_scale=True,
         attr=""
     )
     
-    # 1. Fullscreen toggle (huge UX upgrade)
+    # UI tools
     Fullscreen().add_to(m)
-    
-    # 2. Mini map (gives spatial context)
     MiniMap(toggle_display=True).add_to(m)
-    
-    # 3. Mouse position tracker (lat/lon on hover)
     MousePosition(
         position="bottomright",
         separator=" | ",
         prefix="Coordinates:"
     ).add_to(m)
     
-    # 4. Marker clustering (if you have multiple points later)
+    #  clustering (important for housing datasets)
     marker_cluster = MarkerCluster().add_to(m)
-
-    folium.CircleMarker(
-        location=[city_lat, city_lon],
-        radius=4,
-        color="black",
-        fill=True,
-        fill_color="black",
-        fill_opacity=1
-    ).add_to(marker_cluster)
+    
+    # REAL ESTATE LAYER (NOT just black dots)
+    for i, row in df.iterrows():
+    
+        price = row["price"]
+        area = row["area"]
+    
+        # size = area (scaled)
+        radius = max(3, min(area / 50, 12))
+    
+        # color = price intensity (simple logic)
+        if price < 100000:
+            color = "green"
+        elif price < 300000:
+            color = "orange"
+        else:
+            color = "red"
+    
+        folium.CircleMarker(
+            location=[row["lat"], row["lon"]],
+            radius=radius,
+            color=color,
+            fill=True,
+            fill_color=color,
+            fill_opacity=0.7,
+            popup=folium.Popup(
+                f"Price: ${price:,.0f}<br>Area: {area} sqft",
+                max_width=200
+            )
+        ).add_to(marker_cluster)
+    
+    m
     
     nearby = county_data.sample(min(50, len(county_data)), random_state=42)
     for _, row in nearby.iterrows():
