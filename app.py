@@ -330,54 +330,59 @@ with right:
     )
 
     # base map
-    m = folium.Map(
-        location=[city_lat, city_lon],
-        zoom_start=11,
-        tiles="CartoDB positron",
-        zoom_control=True,
-        control_scale=True,
-        attr=""
-    )
+    def build_map(df, city_lat, city_lon):
     
-    # UI tools
-    Fullscreen().add_to(m)
-    MiniMap(toggle_display=True).add_to(m)
-    MousePosition(
-        position="bottomright",
-        separator=" | ",
-        prefix="Coordinates:"
-    ).add_to(m)
+        m = folium.Map(
+            location=[city_lat, city_lon],
+            zoom_start=11,
+            tiles="CartoDB positron",
+            zoom_control=True,
+            control_scale=True,
+            attr=""
+        )
     
-    # clustering (important for housing datasets)
-    marker_cluster = MarkerCluster().add_to(m)
+        # UI tools
+        Fullscreen().add_to(m)
+        MiniMap(toggle_display=True).add_to(m)
+        MousePosition(
+            position="bottomright",
+            separator=" | ",
+            prefix="Coordinates:"
+        ).add_to(m)
     
-    # REAL ESTATE LAYER
-    for i, row in df.iterrows():
+        # clustering
+        marker_cluster = MarkerCluster().add_to(m)
     
-        price = row["median_house_value"]
+        # REAL ESTATE LAYER
+        for _, row in df.iterrows():
     
-        # simple proxy (since CA dataset has no "area")
-        radius = 5
+            price = row["median_house_value"]
     
-        # price-based color logic
-        if price < 150000:
-            color = "green"
-        elif price < 300000:
-            color = "orange"
-        else:
-            color = "red"
+            radius = 5
     
-        folium.CircleMarker(
-            location=[row["latitude"], row["longitude"]],
-            radius=radius,
-            color=color,
-            fill=True,
-            fill_color=color,
-            fill_opacity=0.7,
-            popup=f"Price: ${price:,.0f}"
-        ).add_to(marker_cluster)
+            if price < 150000:
+                color = "green"
+            elif price < 300000:
+                color = "orange"
+            else:
+                color = "red"
     
-    m
+            folium.CircleMarker(
+                location=[row["latitude"], row["longitude"]],
+                radius=radius,
+                color=color,
+                fill=True,
+                fill_color=color,
+                fill_opacity=0.7,
+                popup=f"Price: ${price:,.0f}"
+            ).add_to(marker_cluster)
+    
+        return m
+    
+    
+    # ── ONLY OUTPUT (hidden process above) ──
+    m = build_map(df, city_lat, city_lon)
+    st_folium(m, use_container_width=True, height=600)
     
     nearby = county_data.sample(min(50, len(county_data)), random_state=42)
     for _, row in nearby.iterrows():
