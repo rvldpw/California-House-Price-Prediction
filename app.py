@@ -10,7 +10,7 @@ st.set_page_config(
     page_title="CA Price Estimator",
     page_icon="⬡",
     layout="wide",
-    initial_sidebar_state="expanded"      # sidebar open by default
+    initial_sidebar_state="collapsed"     # sidebar open by default
 )
 
 # Custom CSS (same as original, kept for reference)
@@ -125,46 +125,38 @@ with st.sidebar:
     st.caption("California House Price Estimator")
     st.markdown("---")
 
-    st.markdown("**Location**")
-    selected_county = st.selectbox(
-        "County", county_list,
-        index=county_list.index("Los Angeles County") if "Los Angeles County" in county_list else 0,
-        label_visibility="collapsed"
-    )
-    # City list updates reactively because it's inside the sidebar
-    city_list = sorted(df[df["county"] == selected_county]["city"].unique())
-    selected_city = st.selectbox("City", city_list, label_visibility="collapsed")
+    with st.expander("📍 Location", expanded=True):
+        selected_county = st.selectbox(
+            "County", county_list,
+            index=county_list.index("Los Angeles County") if "Los Angeles County" in county_list else 0,
+            label_visibility="collapsed"
+        )
 
-    # Get coordinates for the selected city
+        city_list = sorted(df[df["county"] == selected_county]["city"].unique())
+        selected_city = st.selectbox("City", city_list, label_visibility="collapsed")
+
     city_rows = df[(df["county"] == selected_county) & (df["city"] == selected_city)]
     city_lat  = float(city_rows["latitude"].mean())
     city_lon  = float(city_rows["longitude"].mean())
 
-    st.markdown("---")
-    st.markdown("**Ocean Proximity**")
-    ocean_sel = st.selectbox(
-        "Ocean", list(ocean_map.keys()),
-        format_func=lambda x: ocean_map[x],
-        label_visibility="collapsed"
-    )
+    with st.expander("🌊 Ocean Proximity"):
+        ocean_sel = st.selectbox(
+            "Ocean", list(ocean_map.keys()),
+            format_func=lambda x: ocean_map[x],
+            label_visibility="collapsed"
+        )
 
-    st.markdown("---")
-    st.markdown("**Property**")
-    housing_age    = st.slider("House Age (yrs)",   1,  52,  20)
-    total_rooms    = st.slider("Total Rooms",        2,  20,   8,
-                               help="All rooms in the house (bedrooms + living + kitchen etc.)")
-    total_bedrooms = st.slider("Bedrooms",           1,  10,   3,
-                               help="Number of bedrooms")
-    total_bedrooms = min(total_bedrooms, total_rooms)
+    with st.expander("🏠 Property"):
+        housing_age    = st.slider("House Age (yrs)", 1, 52, 20)
+        total_rooms    = st.slider("Total Rooms", 2, 20, 8)
+        total_bedrooms = st.slider("Bedrooms", 1, 10, 3)
+        total_bedrooms = min(total_bedrooms, total_rooms)
 
-    st.markdown("---")
-    st.markdown("**Block Demographics**")
-    households    = st.slider("Households in block",    10, 400, 100)
-    population    = st.slider("Block population",       30, 2000, 400)
-    median_income = st.slider("Median income (×$10K)", 0.5, 15.0, 4.0, 0.1)
-    st.caption(f"≈ {fmt_full(median_income * 10_000)} / year")
+    with st.expander("📊 Demographics"):
+        households    = st.slider("Households", 10, 400, 100)
+        population    = st.slider("Population", 30, 2000, 400)
+        median_income = st.slider("Income (×$10K)", 0.5, 15.0, 4.0, 0.1)
 
-    st.markdown("---")
     st.button("Estimate Price", use_container_width=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
