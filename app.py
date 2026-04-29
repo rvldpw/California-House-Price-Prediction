@@ -10,7 +10,7 @@ st.set_page_config(
     page_title="CA Price Estimator",
     page_icon="⬡",
     layout="wide",
-    initial_sidebar_state="collapsed"     # sidebar open by default
+    initial_sidebar_state="expanded"     # sidebar open by default
 )
 
 # Custom CSS (same as original, kept for reference)
@@ -378,7 +378,7 @@ with right:
 
     # Generate and display the map (smaller height)
     m = build_map_for_county(selected_county, city_lat, city_lon)
-    st_folium(m, height=350, use_container_width=True)   # reduced height
+    st_folium(m, height=280, use_container_width=True)   # reduced height
 
     # County comparison chart (unchanged, still useful)
     st.markdown("<div style='height:1.25rem;'></div>", unsafe_allow_html=True)
