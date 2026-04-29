@@ -348,41 +348,35 @@ with right:
         prefix="Coordinates:"
     ).add_to(m)
     
-    #  clustering (important for housing datasets)
+    # clustering (important for housing datasets)
     marker_cluster = MarkerCluster().add_to(m)
     
-    # REAL ESTATE LAYER (NOT just black dots)
+    # REAL ESTATE LAYER
     for i, row in df.iterrows():
     
-        price = row["price"]
-        area = row["area"]
+        price = row["median_house_value"]
     
-        # size = area (scaled)
-        radius = max(3, min(area / 50, 12))
+        # simple proxy (since CA dataset has no "area")
+        radius = 5
     
-        # color = price intensity (simple logic)
-        for i, row in df.iterrows():
-
-            price = row["median_house_value"]
-        
-            radius = 5  # keep simple unless you have real "area"
-        
-            if price < 150000:
-                color = "green"
-            elif price < 300000:
-                color = "orange"
-            else:
-                color = "red"
-        
-            folium.CircleMarker(
-                location=[row["latitude"], row["longitude"]],
-                radius=radius,
-                color=color,
-                fill=True,
-                fill_color=color,
-                fill_opacity=0.7,
-                popup=f"Price: ${price:,.0f}"
-            ).add_to(marker_cluster)
+        # price-based color logic
+        if price < 150000:
+            color = "green"
+        elif price < 300000:
+            color = "orange"
+        else:
+            color = "red"
+    
+        folium.CircleMarker(
+            location=[row["latitude"], row["longitude"]],
+            radius=radius,
+            color=color,
+            fill=True,
+            fill_color=color,
+            fill_opacity=0.7,
+            popup=f"Price: ${price:,.0f}"
+        ).add_to(marker_cluster)
+    
     m
     
     nearby = county_data.sample(min(50, len(county_data)), random_state=42)
