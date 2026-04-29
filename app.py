@@ -353,6 +353,15 @@ with right:
     
     # 4. Marker clustering (if you have multiple points later)
     marker_cluster = MarkerCluster().add_to(m)
+
+    folium.CircleMarker(
+        location=[city_lat, city_lon],
+        radius=4,
+        color="black",
+        fill=True,
+        fill_color="black",
+        fill_opacity=1
+    ).add_to(marker_cluster)
     
     nearby = county_data.sample(min(50, len(county_data)), random_state=42)
     for _, row in nearby.iterrows():
