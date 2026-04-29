@@ -10,9 +10,10 @@ st.set_page_config(
     page_title="CA Price Estimator",
     page_icon="⬡",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded"      # sidebar open by default
 )
 
+# Custom CSS (same as original, kept for reference)
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=DM+Mono:wght@400;500&display=swap');
@@ -24,7 +25,6 @@ html, body, [class*="css"] {
 }
 #MainMenu, footer, header { visibility: hidden; }
 
-/* Sidebar */
 [data-testid="stSidebar"] {
   background: #ffffff;
   border-right: 1px solid #ebebea;
@@ -43,7 +43,6 @@ html, body, [class*="css"] {
   border: 1px solid #e8e8e6 !important;
   border-radius: 7px !important;
 }
-
 [data-testid="stSidebar"] [data-baseweb="select"] div {
   font-size: 0.85rem !important;
   color: #1a1a1a !important;
@@ -64,15 +63,13 @@ html, body, [class*="css"] {
 [data-testid="stSidebar"] .stButton > button:hover { opacity: 0.65 !important; }
 [data-testid="stSidebar"] hr { border-color: #ebebea !important; margin: 1rem 0 !important; }
 
-/* Main layout */
 .main .block-container { padding: 2.25rem 2.75rem; max-width: 1080px; }
 
-/* Map */
 iframe { border-radius: 8px; }
 </style>
 """, unsafe_allow_html=True)
 
-
+# Load model and data (cached)
 @st.cache_resource
 def load_model():
     with open("ca_house_model.pkl", "rb") as f:
@@ -88,6 +85,7 @@ def load_data():
 model = load_model()
 df    = load_data()
 
+# Helper functions (unchanged)
 def engineer_features(row):
     d = row.copy()
     d["rooms_per_household"]      = d["total_rooms"]    / max(d["households"], 1)
@@ -111,8 +109,17 @@ def fmt(p):
 def fmt_full(p): return f"${p:,.0f}"
 
 county_list = sorted(df["county"].unique())
+ocean_map = {
+    "<1H OCEAN": "< 1 Hour from Ocean",
+    "INLAND":    "Inland",
+    "NEAR BAY":  "Near Bay",
+    "NEAR OCEAN":"Near Ocean",
+    "ISLAND":    "Island"
+}
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# SIDEBAR
+# ─────────────────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("**⬡ HomeValueIQ**")
     st.caption("California House Price Estimator")
@@ -124,22 +131,17 @@ with st.sidebar:
         index=county_list.index("Los Angeles County") if "Los Angeles County" in county_list else 0,
         label_visibility="collapsed"
     )
+    # City list updates reactively because it's inside the sidebar
     city_list = sorted(df[df["county"] == selected_county]["city"].unique())
     selected_city = st.selectbox("City", city_list, label_visibility="collapsed")
 
+    # Get coordinates for the selected city
     city_rows = df[(df["county"] == selected_county) & (df["city"] == selected_city)]
     city_lat  = float(city_rows["latitude"].mean())
     city_lon  = float(city_rows["longitude"].mean())
 
     st.markdown("---")
     st.markdown("**Ocean Proximity**")
-    ocean_map = {
-        "<1H OCEAN": "< 1 Hour from Ocean",
-        "INLAND":    "Inland",
-        "NEAR BAY":  "Near Bay",
-        "NEAR OCEAN":"Near Ocean",
-        "ISLAND":    "Island"
-    }
     ocean_sel = st.selectbox(
         "Ocean", list(ocean_map.keys()),
         format_func=lambda x: ocean_map[x],
@@ -153,7 +155,6 @@ with st.sidebar:
                                help="All rooms in the house (bedrooms + living + kitchen etc.)")
     total_bedrooms = st.slider("Bedrooms",           1,  10,   3,
                                help="Number of bedrooms")
-    # Guard: bedrooms can't exceed rooms
     total_bedrooms = min(total_bedrooms, total_rooms)
 
     st.markdown("---")
@@ -166,10 +167,9 @@ with st.sidebar:
     st.markdown("---")
     st.button("Estimate Price", use_container_width=True)
 
-
-# ── Predict ───────────────────────────────────────────────────────────────────
-# Scale single-house rooms to block-level total_rooms expected by model
-# (model trained on block-group totals; we multiply per-house by households)
+# ─────────────────────────────────────────────────────────────────────────────
+# PREDICTION (scale per‑house rooms to block level)
+# ─────────────────────────────────────────────────────────────────────────────
 block_total_rooms    = total_rooms    * households
 block_total_bedrooms = total_bedrooms * households
 
@@ -183,15 +183,16 @@ input_row = dict(
 )
 pred, low, high = predict(input_row)
 
+# County & city stats for comparison
 county_data = df[df["county"] == selected_county]
 city_data   = df[(df["county"] == selected_county) & (df["city"] == selected_city)]
 county_med  = county_data["median_house_value"].median()
 city_med    = city_data["median_house_value"].median() if len(city_data) > 0 else county_med
 vs_pct      = (pred - county_med) / county_med * 100
 
-
-# ── Main ─────────────────────────────────────────────────────────────────────
-# Tiny wordmark row
+# ─────────────────────────────────────────────────────────────────────────────
+# MAIN LAYOUT (left = data, right = map)
+# ─────────────────────────────────────────────────────────────────────────────
 c1, c2 = st.columns([6, 1])
 with c1:
     st.markdown(
@@ -203,9 +204,8 @@ with c1:
 
 left, right = st.columns([5, 4], gap="large")
 
-# ── LEFT ──────────────────────────────────────────────────────────────────────
+# ─── LEFT COLUMN (statistics, drivers) ───────────────────────────────────────
 with left:
-    # Price hero
     arrow  = "↑" if vs_pct > 0 else ("↓" if vs_pct < 0 else "≈")
     a_col  = "#c0392b" if vs_pct > 0 else ("#27ae60" if vs_pct < 0 else "#aaa")
     vs_str = f"{arrow} {abs(vs_pct):.1f}% vs county median"
@@ -229,7 +229,7 @@ with left:
         unsafe_allow_html=True
     )
 
-    # Input chips using st.markdown (safe — no HTML injection risk)
+    # Chips
     chips_html = (
         f"<div style='display:flex;flex-wrap:wrap;gap:0.35rem;margin-bottom:1.5rem;'>"
         f"<span style='font-size:0.65rem;font-weight:600;letter-spacing:0.06em;"
@@ -246,12 +246,12 @@ with left:
     chips_html += "</div>"
     st.markdown(chips_html, unsafe_allow_html=True)
 
+    # Area statistics
     st.markdown(
         "<p style='font-size:0.65rem;font-weight:600;letter-spacing:0.12em;"
         "text-transform:uppercase;color:#bbb;margin-bottom:0;'>Area Statistics</p>",
         unsafe_allow_html=True
     )
-
     stats = [
         ("County median",     fmt_full(county_med)),
         ("City median",       fmt_full(city_med)),
@@ -270,18 +270,15 @@ with left:
             f"color:#1a1a1a;font-weight:500;'>{val}</span></div>",
             unsafe_allow_html=True
         )
-    st.markdown(
-        "<div style='border-top:1px solid #ebebea;'></div>",
-        unsafe_allow_html=True
-    )
+    st.markdown("<div style='border-top:1px solid #ebebea;'></div>", unsafe_allow_html=True)
 
+    # Key drivers
     st.markdown("<div style='height:1.25rem;'></div>", unsafe_allow_html=True)
     st.markdown(
         "<p style='font-size:0.65rem;font-weight:600;letter-spacing:0.12em;"
         "text-transform:uppercase;color:#bbb;margin-bottom:0;'>Key Drivers</p>",
         unsafe_allow_html=True
     )
-
     drivers = []
     if median_income >= 7:
         drivers.append(("High income area", "+strong", "#27ae60"))
@@ -325,7 +322,7 @@ with left:
             unsafe_allow_html=True
         )
 
-# ── RIGHT ─────────────────────────────────────────────────────────────────────
+# ─── RIGHT COLUMN (map) ──────────────────────────────────────────────────────
 with right:
     st.markdown(
         "<p style='font-size:0.65rem;font-weight:600;letter-spacing:0.12em;"
@@ -333,41 +330,36 @@ with right:
         unsafe_allow_html=True
     )
 
-    # base map
+    # Build map only for the selected county (much faster)
     @st.cache_data
-    def build_map(df, city_lat, city_lon):
-    
+    def build_map_for_county(county_name, lat, lon):
+        county_df = df[df["county"] == county_name].copy()
+        if county_df.empty:
+            # fallback
+            m = folium.Map(location=[lat, lon], zoom_start=12, tiles="CartoDB positron")
+            return m
         m = folium.Map(
-            location=[city_lat, city_lon],
-            zoom_start=11,
+            location=[lat, lon],
+            zoom_start=10,               # narrower view (makes map smaller in practice)
             tiles="CartoDB positron",
             zoom_control=True,
-            control_scale=True,
-            attr=""
+            control_scale=True
         )
-    
         Fullscreen().add_to(m)
         MiniMap(toggle_display=True).add_to(m)
-        MousePosition(
-            position="bottomright",
-            separator=" | ",
-            prefix="Coordinates:"
-        ).add_to(m)
-    
+        MousePosition(position="bottomright", separator=" | ", prefix="Coordinates:").add_to(m)
+
+        # Marker cluster for all properties in the county
         marker_cluster = MarkerCluster().add_to(m)
-    
-        # faster iteration (avoid heavy iterrows bottleneck)
-        for row in df.itertuples(index=False):
-    
+
+        for row in county_df.itertuples(index=False):
             price = row.median_house_value
-    
-            if price < 150000:
+            if price < 150_000:
                 color = "green"
-            elif price < 300000:
+            elif price < 300_000:
                 color = "orange"
             else:
                 color = "red"
-    
             folium.CircleMarker(
                 location=[row.latitude, row.longitude],
                 radius=5,
@@ -377,53 +369,37 @@ with right:
                 fill_opacity=0.7,
                 popup=f"Price: ${price:,.0f}"
             ).add_to(marker_cluster)
-    
-        return m
-    
-    
-    # ── FAST RENDER ONLY ──
-    m = build_map(df, city_lat, city_lon)
-    
-    st_folium(m, height=500, use_container_width=True)
-    
-    nearby = county_data.sample(min(50, len(county_data)), random_state=42)
-    for _, row in nearby.iterrows():
-        v = row["median_house_value"]
-        c = "#1a1a1a" if v > 350_000 else "#ccc"
+
+        # Highlight the selected city
         folium.CircleMarker(
-            [row["latitude"], row["longitude"]],
-            radius=3, color=c, fill=True,
-            fill_color=c, fill_opacity=0.4, weight=0,
-            tooltip=f"{row['city']} · {fmt_full(v)}"
+            [lat, lon], radius=14,
+            color="#1a1a1a", fill=True, fill_color="#1a1a1a",
+            fill_opacity=0.1, weight=0
         ).add_to(m)
+        folium.CircleMarker(
+            [lat, lon], radius=6,
+            color="#1a1a1a", fill=True, fill_color="#1a1a1a",
+            fill_opacity=1, weight=0,
+            tooltip=f"{selected_city} · {fmt_full(pred)}"
+        ).add_to(m)
+        return m
 
-    folium.CircleMarker(
-        [city_lat, city_lon], radius=14,
-        color="#1a1a1a", fill=True, fill_color="#1a1a1a",
-        fill_opacity=0.1, weight=0
-    ).add_to(m)
-    folium.CircleMarker(
-        [city_lat, city_lon], radius=6,
-        color="#1a1a1a", fill=True, fill_color="#1a1a1a",
-        fill_opacity=1, weight=0,
-        tooltip=f"{selected_city} · {fmt_full(pred)}"
-    ).add_to(m)
+    # Generate and display the map (smaller height)
+    m = build_map_for_county(selected_county, city_lat, city_lon)
+    st_folium(m, height=350, use_container_width=True)   # reduced height
 
-    st_folium(m, height=230, use_container_width=True)
-
+    # County comparison chart (unchanged, still useful)
     st.markdown("<div style='height:1.25rem;'></div>", unsafe_allow_html=True)
     st.markdown(
         "<p style='font-size:0.65rem;font-weight:600;letter-spacing:0.12em;"
         "text-transform:uppercase;color:#bbb;margin-bottom:0.75rem;'>County Comparison</p>",
         unsafe_allow_html=True
     )
-
     top_co = (
         df.groupby("county")["median_house_value"]
         .median().sort_values(ascending=False).head(10).reset_index()
     )
     max_v = top_co["median_house_value"].max()
-
     for _, row in top_co.iterrows():
         pct   = row["median_house_value"] / max_v * 100
         is_me = row["county"] == selected_county
@@ -444,6 +420,7 @@ with right:
             unsafe_allow_html=True
         )
 
+    # Distribution histogram for the selected county
     st.markdown("<div style='height:1.25rem;'></div>", unsafe_allow_html=True)
     co_short = selected_county.replace(" County", "")
     st.markdown(
@@ -452,13 +429,11 @@ with right:
         f"Distribution — {co_short}</p>",
         unsafe_allow_html=True
     )
-
     bins   = list(range(0, 560_000, 50_000))
     prices = county_data["median_house_value"].dropna().tolist()
     counts = [sum(1 for p in prices if bins[i] <= p < bins[i+1]) for i in range(len(bins)-1)]
     pb     = min(int(pred // 50_000), len(bins)-2)
     max_c  = max(counts) if counts else 1
-
     bars_html = "<div style='display:flex;align-items:flex-end;gap:2px;height:48px;'>"
     for i, cnt in enumerate(counts):
         h  = max(2, int(cnt / max_c * 48))
@@ -474,7 +449,7 @@ with right:
     )
     st.markdown(bars_html, unsafe_allow_html=True)
 
-# ── Footer ────────────────────────────────────────────────────────────────────
+# Footer
 st.markdown("<div style='height:1.5rem;'></div>", unsafe_allow_html=True)
 st.markdown(
     "<p style='font-size:0.65rem;color:#ccc;text-align:center;letter-spacing:0.04em;'>"
