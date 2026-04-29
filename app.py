@@ -82,7 +82,11 @@ html, body, [class*="css"] {
 
 /* Map */
 iframe { border-radius: 8px; }
-</style>
+
+/* Hide sidebar collapse button */
+button[kind="sidebarCollapse"] {
+  display: none !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
