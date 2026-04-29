@@ -23,14 +23,17 @@ html, body, [class*="css"] {
   background: #f9f9f8;
   color: #1a1a1a;
 }
-#MainMenu, footer { visibility: hidden; }
+#MainMenu, footer, header { visibility: hidden; }
 
+/* Sidebar */
 [data-testid="stSidebar"] {
   background: #ffffff;
   border-right: 1px solid #ebebea;
 }
 [data-testid="stSidebar"] > div { padding: 1.75rem 1.5rem; }
-[data-testid="stSidebar"] * { color: #1a1a1a !important; }
+
+/* REMOVED the universal color override: [data-testid="stSidebar"] * { color: #1a1a1a !important; } */
+
 [data-testid="stSidebar"] label {
   font-size: 0.68rem !important;
   font-weight: 600 !important;
@@ -47,25 +50,39 @@ html, body, [class*="css"] {
   font-size: 0.85rem !important;
   color: #1a1a1a !important;
 }
-[data-testid="stSidebar"] .stButton > button {
+
+/* Sidebar button - strong selectors for white, bold text */
+[data-testid="stSidebar"] .stButton button,
+[data-testid="stSidebar"] div.stButton > button {
   background: #1a1a1a !important;
-  color: #ffffff !important;          /* pure white for better contrast */
+  color: #ffffff !important;
   border: none !important;
   border-radius: 7px !important;
   font-family: 'DM Sans', sans-serif !important;
   font-size: 0.8rem !important;
-  font-weight: 700 !important;        /* bolder (700 = bold) */
+  font-weight: 700 !important;
   letter-spacing: 0.05em !important;
   padding: 0.6rem 1rem !important;
   width: 100% !important;
   transition: opacity 0.15s !important;
 }
-[data-testid="stSidebar"] .stButton > button:hover { opacity: 0.65 !important; }
+[data-testid="stSidebar"] .stButton button:hover { opacity: 0.65 !important; }
+
+/* Force any nested text inside the button to also be white and bold */
+[data-testid="stSidebar"] .stButton button p,
+[data-testid="stSidebar"] .stButton button span {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
 [data-testid="stSidebar"] hr { border-color: #ebebea !important; margin: 1rem 0 !important; }
 
+/* Main layout */
 .main .block-container { padding: 2.25rem 2.75rem; max-width: 1080px; }
 
+/* Map */
 iframe { border-radius: 8px; }
+</style>
 </style>
 """, unsafe_allow_html=True)
 
