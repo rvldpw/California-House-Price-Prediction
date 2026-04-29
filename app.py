@@ -38,11 +38,15 @@ html, body, [class*="css"] {
   text-transform: uppercase !important;
   color: #aaa !important;
 }
-[data-testid="stSidebar"] .stSelectbox > div > div {
+[data-testid="stSidebar"] [data-baseweb="select"] {
   background: #f5f5f3 !important;
   border: 1px solid #e8e8e6 !important;
   border-radius: 7px !important;
+}
+
+[data-testid="stSidebar"] [data-baseweb="select"] div {
   font-size: 0.85rem !important;
+  color: #1a1a1a !important;
 }
 [data-testid="stSidebar"] .stButton > button {
   background: #1a1a1a !important;
@@ -330,6 +334,7 @@ with right:
     )
 
     # base map
+    @st.cache_data
     def build_map(df, city_lat, city_lon):
     
         m = folium.Map(
@@ -341,7 +346,6 @@ with right:
             attr=""
         )
     
-        # UI tools
         Fullscreen().add_to(m)
         MiniMap(toggle_display=True).add_to(m)
         MousePosition(
@@ -350,15 +354,12 @@ with right:
             prefix="Coordinates:"
         ).add_to(m)
     
-        # clustering
         marker_cluster = MarkerCluster().add_to(m)
     
-        # REAL ESTATE LAYER
-        for _, row in df.iterrows():
+        # faster iteration (avoid heavy iterrows bottleneck)
+        for row in df.itertuples(index=False):
     
-            price = row["median_house_value"]
-    
-            radius = 5
+            price = row.median_house_value
     
             if price < 150000:
                 color = "green"
@@ -368,8 +369,8 @@ with right:
                 color = "red"
     
             folium.CircleMarker(
-                location=[row["latitude"], row["longitude"]],
-                radius=radius,
+                location=[row.latitude, row.longitude],
+                radius=5,
                 color=color,
                 fill=True,
                 fill_color=color,
@@ -380,9 +381,10 @@ with right:
         return m
     
     
-    # ── ONLY OUTPUT (hidden process above) ──
+    # ── FAST RENDER ONLY ──
     m = build_map(df, city_lat, city_lon)
-    st_folium(m, use_container_width=True, height=600)
+    
+    st_folium(m, height=500, use_container_width=True)
     
     nearby = county_data.sample(min(50, len(county_data)), random_state=42)
     for _, row in nearby.iterrows():
