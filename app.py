@@ -353,7 +353,7 @@ with right:
     
     # 4. Marker clustering (if you have multiple points later)
     marker_cluster = MarkerCluster().add_to(m)
-    )
+    
     nearby = county_data.sample(min(50, len(county_data)), random_state=42)
     for _, row in nearby.iterrows():
         v = row["median_house_value"]
