@@ -361,26 +361,28 @@ with right:
         radius = max(3, min(area / 50, 12))
     
         # color = price intensity (simple logic)
-        if price < 100000:
-            color = "green"
-        elif price < 300000:
-            color = "orange"
-        else:
-            color = "red"
-    
-        folium.CircleMarker(
-            location=[row["lat"], row["lon"]],
-            radius=radius,
-            color=color,
-            fill=True,
-            fill_color=color,
-            fill_opacity=0.7,
-            popup=folium.Popup(
-                f"Price: ${price:,.0f}<br>Area: {area} sqft",
-                max_width=200
-            )
-        ).add_to(marker_cluster)
-    
+        for i, row in df.iterrows():
+
+            price = row["median_house_value"]
+        
+            radius = 5  # keep simple unless you have real "area"
+        
+            if price < 150000:
+                color = "green"
+            elif price < 300000:
+                color = "orange"
+            else:
+                color = "red"
+        
+            folium.CircleMarker(
+                location=[row["latitude"], row["longitude"]],
+                radius=radius,
+                color=color,
+                fill=True,
+                fill_color=color,
+                fill_opacity=0.7,
+                popup=f"Price: ${price:,.0f}"
+            ).add_to(marker_cluster)
     m
     
     nearby = county_data.sample(min(50, len(county_data)), random_state=42)
