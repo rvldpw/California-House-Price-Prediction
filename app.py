@@ -144,7 +144,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("**Property**")
     housing_age    = st.slider("House Age (yrs)",   1,  52,  20)
-    total_rooms    = st.slider("Total Rooms",        2,  30,   8,
+    total_rooms    = st.slider("Total Rooms",        2,  20,   8,
                                help="All rooms in the house (bedrooms + living + kitchen etc.)")
     total_bedrooms = st.slider("Bedrooms",           1,  10,   3,
                                help="Number of bedrooms")
