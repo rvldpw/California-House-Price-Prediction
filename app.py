@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import folium
+from folium.plugins import MarkerCluster, Fullscreen, MiniMap, MousePosition
 from streamlit_folium import st_folium
 
 st.set_page_config(
@@ -329,10 +330,29 @@ with right:
     )
 
     m = folium.Map(
-        location=[city_lat, city_lon], zoom_start=11,
+        location=[city_lat, city_lon],
+        zoom_start=11,
         tiles="CartoDB positron",
-        zoom_control=False, control_scale=False,
+        zoom_control=True,   # enable zoom UI
+        control_scale=True,
         attr=""
+    )
+    
+    # 1. Fullscreen toggle (huge UX upgrade)
+    Fullscreen().add_to(m)
+    
+    # 2. Mini map (gives spatial context)
+    MiniMap(toggle_display=True).add_to(m)
+    
+    # 3. Mouse position tracker (lat/lon on hover)
+    MousePosition(
+        position="bottomright",
+        separator=" | ",
+        prefix="Coordinates:"
+    ).add_to(m)
+    
+    # 4. Marker clustering (if you have multiple points later)
+    marker_cluster = MarkerCluster().add_to(m)
     )
     nearby = county_data.sample(min(50, len(county_data)), random_state=42)
     for _, row in nearby.iterrows():
