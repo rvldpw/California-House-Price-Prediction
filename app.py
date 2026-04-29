@@ -49,12 +49,12 @@ html, body, [class*="css"] {
 }
 [data-testid="stSidebar"] .stButton > button {
   background: #1a1a1a !important;
-  color: #f9f9f8 !important;
+  color: #ffffff !important;
   border: none !important;
   border-radius: 7px !important;
   font-family: 'DM Sans', sans-serif !important;
   font-size: 0.8rem !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   letter-spacing: 0.05em !important;
   padding: 0.6rem 1rem !important;
   width: 100% !important;
