@@ -93,12 +93,12 @@ button[kind="sidebarCollapse"] {
 # Load model and data (cached)
 @st.cache_resource
 def load_model():
-    with open("ca_house_model.pkl", "rb") as f:
+    with open("streamlit/ca_house_model.pkl", "rb") as f:
         return pickle.load(f)
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data_ca_geocoded.csv")
+    df = pd.read_csv("streamlit/data_ca_geocoded.csv")
     df["county"] = df["county"].fillna("Unknown")
     df["city"]   = df["city"].fillna("Unknown")
     return df
